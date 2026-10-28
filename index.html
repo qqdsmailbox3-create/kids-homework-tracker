@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>쑥쑥 자라는 숙제 요정 🌟 요일별 숙제 체크</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Gaegu & Jua for cute friendly Korean typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            jua: ['Jua', 'sans-serif'],
+            sans: ['Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            kidYellow: '#FFDE59',
+            kidYellowDark: '#E5B800',
+            kidBlue: '#54A0FF',
+            kidPink: '#FF6B81',
+            kidGreen: '#1DD1A1',
+            kidPurple: '#A55EEA',
+            kidBg: '#FFFDF7'
+          },
+          animation: {
+            'bounce-gentle': 'bounceGentle 2s infinite',
+            'stamp-slam': 'stampSlam 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'wiggle': 'wiggle 0.3s ease-in-out',
+          },
+          keyframes: {
+            bounceGentle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            stampSlam: {
+              '0%': { opacity: '0', transform: 'scale(3) rotate(-15deg)' },
+              '70%': { opacity: '0.9', transform: 'scale(0.9) rotate(-10deg)' },
+              '100%': { opacity: '1', transform: 'scale(1) rotate(-8deg)' },
+            },
+            wiggle: {
+              '0%, 100%': { transform: 'rotate(-3deg)' },
+              '50%': { transform: 'rotate(3deg)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: radial-gradient(circle at 10% 20%, #FFF5EB 0%, #F0F8FF 90%);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #CBD5E1;
+      border-radius: 9999px;
+    }
+    /* COMPLETE Stamp styling */
+    .complete-stamp-badge {
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+      border: 4px dashed #EF4444;
+      text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8);
+    }
+    /* Neumorphic / Chunky kid style buttons */
+    .kid-btn {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+    }
+    .kid-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+    }
+    .todo-checkbox:checked + label .todo-text {
+      text-decoration: line-through;
+      color: #94A3B8;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-16 text-slate-800">
+
+  <!-- Top App Navigation / Header -->
+  <header class="bg-white/80 backdrop-blur-md border-b-4 border-amber-200 sticky top-0 z-30 px-4 py-3 shadow-sm">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 bg-kidYellow rounded-2xl flex items-center justify-center text-2xl shadow-inner border-2 border-amber-300">
+          ⭐
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-jua text-amber-900 tracking-wide flex items-center gap-1.5">
+            숙제 요정 체크 
+            <span class="text-xs bg-amber-100 text-amber-800 font-sans font-bold px-2 py-0.5 rounded-full border border-amber-300">참 잘했어요!</span>
+          </h1>
+          <p class="text-xs text-amber-700/80 font-medium">오늘 할 일을 끝내고 멋진 보상을 모아봐요!</p>
+        </div>
+      </div>
+
+      <!-- Sync Status & Family ID Indicator -->
+      <div class="flex items-center gap-2">
+        <button id="familyCodeBtn" class="bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-amber-800 flex items-center gap-1.5 transition">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="syncText">실시간 동기화중</span>
+          <span class="text-sm">👨‍👩‍👧</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 pt-5 space-y-5">
+
+    <!-- Reward Goal & Stamp Tracker Banner -->
+    <section class="bg-gradient-to-r from-amber-50 via-orange-50 to-pink-50 rounded-3xl p-5 border-4 border-amber-200 shadow-md relative overflow-hidden">
+      <!-- Background decoration -->
+      <div class="absolute -right-4 -bottom-6 text-7xl opacity-15 pointer-events-none">🏆</div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎁</span>
+            <h2 class="text-lg md:text-xl font-jua text-slate-800">이번 주 칭찬 보상 목표</h2>
+            <button id="editRewardBtn" class="text-xs bg-white text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold ml-1 transition">
+              목표 바꾸기 ✏️
+            </button>
+          </div>
+          <p id="currentRewardText" class="text-sm md:text-base font-bold text-pink-600 mt-1 pl-8">
+            🎯 이번 주말 자유시간 1시간 + 맛있는 아이스크림!
+          </p>
+        </div>
+
+        <!-- Weekly Stamp Badge Counter -->
+        <div class="bg-white/90 rounded-2xl p-3 border-2 border-amber-300 shadow-sm flex items-center gap-3 self-start sm:self-auto min-w-[170px] justify-between">
+          <div>
+            <div class="text-[11px] font-bold text-slate-400">이번 주 획득 도장</div>
+            <div class="font-jua text-2xl text-amber-500 flex items-center gap-1">
+              <span id="stampCount">0</span> <span class="text-slate-400 text-lg">/</span> <span id="stampTarget">5</span>
+              <span class="text-xl">🌟</span>
+            </div>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
+            👑
+          </div>
+        </div>
+      </div>
+
+      <!-- Stamp Progress Bar -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-xs font-bold text-slate-600 px-1">
+          <span>도장 진행률</span>
+          <span id="stampPercentText">0% 달성</span>
+        </div>
+        <div class="w-full bg-white/80 rounded-full h-4 p-0.5 border-2 border-amber-200 overflow-hidden shadow-inner">
+          <div id="stampProgressBar" class="h-full bg-gradient-to-r from-kidYellow via-orange-400 to-kidPink rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Visual Stamp Board (7 Days Icons) -->
+      <div class="grid grid-cols-7 gap-1.5 md:gap-3 mt-4 pt-3 border-t-2 border-dashed border-amber-200/80">
+        <!-- Rendered via JS for 7 days badges -->
+        <div id="weeklyStampBoard" class="contents"></div>
+      </div>
+    </section>
+
+
+    <!-- Day Selector Tabs (월 화 수 목 금 토 일) -->
+    <section class="bg-white rounded-3xl p-3 border-4 border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-2 px-2">
+        <span class="text-xs font-bold text-slate-400">요일을 눌러 숙제를 확인하세요</span>
+        <span id="currentDateDisplay" class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+          오늘: 2026. 10. 28 (수)
+        </span>
+      </div>
+
+      <div class="grid grid-cols-7 gap-1 md:gap-2" id="dayTabsContainer">
+        <!-- Day Buttons dynamically active -->
+      </div>
+    </section>
+
+
+    <!-- Main Day Card & Homework Checklist -->
+    <section id="dayCardWrapper" class="bg-white rounded-3xl p-5 md:p-7 border-4 border-amber-300 shadow-lg relative min-h-[380px]">
+
+      <!-- GIANT COMPLETE STAMP OVERLAY (Animated when all done) -->
+      <div id="completeStamp" class="hidden absolute top-6 right-6 md:top-8 md:right-12 z-20 pointer-events-none animate-stamp-slam select-none">
+        <div class="complete-stamp-badge bg-rose-50/95 text-rose-600 rounded-3xl px-5 py-2.5 md:px-7 md:py-3.5 flex items-center gap-2 transform">
+          <span class="text-3xl md:text-4xl">💮</span>
+          <div class="text-left">
+            <div class="font-jua text-2xl md:text-3xl tracking-wider leading-none">COMPLETE!</div>
+            <div class="text-[10px] md:text-xs font-black tracking-widest text-rose-500 uppercase mt-0.5">참 잘했어요 최고예요 👍</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Day Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-slate-100 pb-4 mb-5">
+        <div class="flex items-center gap-3">
+          <div id="activeDayBadge" class="w-14 h-14 rounded-2xl bg-amber-400 text-white font-jua text-2xl flex items-center justify-center shadow-md border-2 border-amber-500">
+            수
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="activeDayTitle" class="text-2xl font-jua text-slate-800">수요일의 숙제 & 할 일</h3>
+              <span id="statusPill" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700">진행 중</span>
+            </div>
+            <p id="activeDaySubtitle" class="text-xs text-slate-400 mt-0.5">
+              남은 숙제: <b id="remainingCount" class="text-rose-500 font-bold">0개</b> / 총 <span id="totalCount">0개</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="flex items-center gap-2">
+          <button id="resetDayBtn" title="이 요일의 모든 체크 초기화" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
+            🔄 체크 초기화
+          </button>
+          <button id="addHomeworkModalBtn" class="kid-btn bg-kidYellow hover:bg-amber-400 text-amber-950 font-jua text-base px-4 py-2 rounded-xl flex items-center gap-1.5 border-2 border-amber-400">
+            <span class="text-lg leading-none">+</span> 숙제 추가하기
+          </button>
+        </div>
+      </div>
+
+      <!-- Homework Items List -->
+      <div id="homeworkList" class="space-y-3 min-h-[160px]">
+        <!-- Homework Items injected by JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyHomeworkState" class="hidden flex flex-col items-center justify-center py-12 text-center text-slate-400">
+        <div class="text-6xl mb-3 animate-bounce-gentle">🎈</div>
+        <p class="font-jua text-xl text-slate-600">등록된 숙제가 없어요!</p>
+        <p class="text-xs text-slate-400 mt-1">우측 상단 '+ 숙제 추가하기' 버튼을 눌러 오늘 할 일을 적어보세요.</p>
+        <button id="loadPresetBtn" class="mt-4 text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-3.5 py-2 rounded-xl hover:bg-indigo-100 transition">
+          ✨ 초등 추천 숙제 채워넣기 (익힘책, 일기, 독서 등)
+        </button>
+      </div>
+
+      <!-- Daily Encouragement Box -->
+      <div class="mt-8 bg-sky-50 border-2 border-sky-100 rounded-2xl p-3.5 flex items-center gap-3">
+        <div class="text-2xl">💡</div>
+        <div class="text-xs text-sky-800">
+          <span class="font-bold text-sky-900">오늘의 꿀팁:</span>
+          <span id="dailyTipText">하루 30분씩 꾸준히 책을 읽으면 집중력과 어휘력이 쑥쑥 자라나요!</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guide / Family Sync Card -->
+    <section class="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-slate-200 text-xs text-slate-500 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">📱</span>
+        <span>
+          <b>휴대폰과 PC 실시간 연동:</b> 부모님 폰이나 태블릿에서도 같은 주소로 접속하면 숙제 체크 상태가 실시간으로 확인됩니다!
+        </span>
+      </div>
+      <button id="copyShareLinkBtn" class="bg-white border border-slate-300 hover:bg-slate-50 font-bold px-3 py-1.5 rounded-lg text-slate-700 whitespace-nowrap shadow-sm">
+        🔗 가족 공유 링크 복사
+      </button>
+    </section>
+  </main>
+
+  <!-- MODAL: Add / Edit Homework -->
+  <div id="homeworkModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 border-4 border-amber-300 shadow-2xl relative animate-wiggle">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-slate-100">
+        <h3 id="modalTitle" class="text-xl font-jua text-amber-900 flex items-center gap-2">
+          <span>✏️</span> 새 숙제 등록하기
+        </h3>
+        <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <form id="homeworkForm" class="space-y-4">
+        <input type="hidden" id="editItemId" value="">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">숙제 / 할 일 내용</label>
+          <input type="text" id="homeworkInput" required placeholder="예: 수학 익힘책 24~26쪽 풀기" class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none text-sm font-semibold bg-slate-50 focus:bg-white transition">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">카테고리</label>
+            <select id="categorySelect" class="w-full px-3 py-2.5 rounded-xl border-2 border-slate-200 font-bold text-xs bg-slate-50 focus:outline-none">
+              <option value="math">📐 수학</option>
+              <option value="korean">📖 국어/일기</option>
+              <option value="english">🔤 영어</option>
+              <option value="reading">📚 독서</option>
+              <option value="music">🎵 음악/악기</option>
+              <option value="exercise">⚽ 운동/줄넘기</option>
+              <option value="habit">🧹 생활습관/정리</option>
+              <option value="other">⭐ 기타 숙제</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">예상 시간</label>
+            <select id="timeSelect" class="w-full px-3 py-2.5 rounded-xl border-2 border-slate-200 font-bold text-xs bg-slate-50 focus:outline-none">
+              <option value="15분">⏱️ 15분</option>
+              <option value="30분" selected>⏱️ 30분</option>
+              <option value="45분">⏱️ 45분</option>
+              <option value="1시간">⏱️ 1시간</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick preset badges for fast clicking -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-400 mb-1.5">자주 하는 숙제 누르기</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" class="quick-preset text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg hover:bg-amber-100 font-medium" data-val="수학 익힘책 풀기" data-cat="math">📐 수학익힘책</button>
+            <button type="button" class="quick-preset text-xs bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-lg hover:bg-rose-100 font-medium" data-val="일기 쓰기" data-cat="korean">✏️ 일기 쓰기</button>
+            <button type="button" class="quick-preset text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg hover:bg-emerald-100 font-medium" data-val="독서 30분 (독서록)" data-cat="reading">📚 책 30분 읽기</button>
+            <button type="button" class="quick-preset text-xs bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-100 font-medium" data-val="영어 단어 10개 외우기" data-cat="english">🔤 영어 단어</button>
+            <button type="button" class="quick-preset text-xs bg-purple-50 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 font-medium" data-val="줄넘기 100개 하기" data-cat="exercise">⚽ 줄넘기 100개</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-100">
+            취소
+          </button>
+          <button type="submit" class="kid-btn bg-amber-400 hover:bg-amber-500 border-2 border-amber-500 font-jua text-amber-950 px-6 py-2.5 rounded-xl text-base">
+            저장하기 💾
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Reward Target -->
+  <div id="rewardModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 border-4 border-pink-300 shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-slate-100">
+        <h3 class="text-lg font-jua text-pink-700 flex items-center gap-2">
+          <span>🎁</span> 보상 목표 정하기
+        </h3>
+        <button id="closeRewardModalBtn" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <form id="rewardForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">받고 싶은 보상 (약속)</label>
+          <textarea id="rewardInput" rows="2" required placeholder="예: 주말에 동물원 가기, 레고 선물 받기, 게임 1시간" class="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-pink-400 focus:outline-none text-xs font-semibold bg-slate-50 focus:bg-white"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">필요한 스탬프 개수</label>
+          <div class="flex items-center gap-3">
+            <input type="range" id="targetStampRange" min="3" max="7" value="5" class="w-full accent-pink-500">
+            <span id="targetStampRangeVal" class="font-jua text-xl text-pink-600 min-w-[40px]">5개</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">월요일부터 일요일 중 며칠을 올클리어하면 받을까요?</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cancelRewardBtn" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs">
+            취소
+          </button>
+          <button type="submit" class="kid-btn bg-pink-400 hover:bg-pink-500 border-2 border-pink-500 font-jua text-white px-5 py-2 rounded-xl text-sm">
+            목표 저장 ✨
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Alert Toast (No window.alert) -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl z-50 pointer-events-none opacity-0 transition-opacity duration-300 flex items-center gap-2">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">알림 메시지</span>
+  </div>
+
+  <!-- Firebase Scripts (Modular Web SDK) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // -------------------------------------------------------------
+    // Sound FX using Web Audio API (No external sound assets needed)
+    // -------------------------------------------------------------
+    class SoundController {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+      }
+      playCheck() {
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.15); // A5
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch(e) {}
+      }
+      playUncheck() {
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(260, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.15);
+        } catch(e) {}
+      }
+      playFanfare() {
+        try {
+          this.init();
+          if (!this.ctx) return;
+          // Upbeat fanfare: C5 -> E5 -> G5 -> C6
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime + (idx * 0.11);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.12, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.32);
+          });
+        } catch(e) {}
+      }
+    }
+    const sound = new SoundController();
+
+    // -------------------------------------------------------------
+    // Days Configuration
+    // -------------------------------------------------------------
+    const DAYS = [
+      { key: 'mon', name: '월요일', short: '월', color: '#3B82F6', icon: '🚀' },
+      { key: 'tue', name: '화요일', short: '화', color: '#10B981', icon: '🌱' },
+      { key: 'wed', name: '수요일', short: '수', color: '#F59E0B', icon: '⭐' },
+      { key: 'thu', name: '목요일', short: '목', color: '#8B5CF6', icon: '🎨' },
+      { key: 'fri', name: '금요일', short: '금', color: '#EC4899', icon: '🔥' },
+      { key: 'sat', name: '토요일', short: '토', color: '#06B6D4', icon: '🎮' },
+      { key: 'sun', name: '일요일', short: '일', color: '#EF4444', icon: '🌈' },
+    ];
+
+    const CATEGORY_MAP = {
+      math: { label: '수학', emoji: '📐', bg: 'bg-amber-100 text-amber-800 border-amber-300' },
+      korean: { label: '국어/일기', emoji: '📖', bg: 'bg-rose-100 text-rose-800 border-rose-300' },
+      english: { label: '영어', emoji: '🔤', bg: 'bg-blue-100 text-blue-800 border-blue-300' },
+      reading: { label: '독서', emoji: '📚', bg: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      music: { label: '음악', emoji: '🎵', bg: 'bg-violet-100 text-violet-800 border-violet-300' },
+      exercise: { label: '운동', emoji: '⚽', bg: 'bg-orange-100 text-orange-800 border-orange-300' },
+      habit: { label: '습관', emoji: '🧹', bg: 'bg-teal-100 text-teal-800 border-teal-300' },
+      other: { label: '기타', emoji: '⭐', bg: 'bg-slate-100 text-slate-800 border-slate-300' },
+    };
+
+    const DEFAULT_PRESETS = {
+      mon: [
+        { id: '1', title: '수학 익힘책 2단원 2쪽 풀기', category: 'math', time: '30분', done: false },
+        { id: '2', title: '국어 교과서 소리 내어 1번 읽기', category: 'korean', time: '15분', done: false },
+        { id: '3', title: '매일 독서 30분 하기', category: 'reading', time: '30분', done: false }
+      ],
+      tue: [
+        { id: '4', title: '영어 파닉스 & 단어 5개 복습', category: 'english', time: '20분', done: false },
+        { id: '5', title: '그림일기 또는 줄글 일기 쓰기', category: 'korean', time: '30분', done: false },
+        { id: '6', title: '책상 정리 및 연필 깎아두기', category: 'habit', time: '15분', done: false }
+      ],
+      wed: [
+        { id: '7', title: '수학 연산 1장 풀기', category: 'math', time: '20분', done: false },
+        { id: '8', title: '줄넘기 150번 도전하기', category: 'exercise', time: '20분', done: false },
+        { id: '9', title: '동화책 읽고 마음에 드는 문장 쓰기', category: 'reading', time: '30분', done: false }
+      ],
+      thu: [
+        { id: '10', title: '알림장 확인 및 내일 준비물 챙기기', category: 'habit', time: '15분', done: false },
+        { id: '11', title: '영어 동화 1편 듣고 따라 읽기', category: 'english', time: '25분', done: false },
+        { id: '12', title: '리코더 / 멜로디언 연습 15분', category: 'music', time: '15분', done: false }
+      ],
+      fri: [
+        { id: '13', title: '이번 주 배운 수학 오답노트 확인', category: 'math', time: '30분', done: false },
+        { id: '14', title: '주말 일기 미리 주제 생각하기', category: 'korean', time: '15분', done: false },
+        { id: '15', title: '실내화 빨기 / 방 청소 돕기', category: 'habit', time: '20분', done: false }
+      ],
+      sat: [
+        { id: '16', title: '자유 독서 40분 (좋아하는 책)', category: 'reading', time: '40분', done: false },
+        { id: '17', title: '가족과 야외 운동 또는 산책하기', category: 'exercise', time: '1시간', done: false }
+      ],
+      sun: [
+        { id: '18', title: '월요일 시간표 가방 싸기', category: 'habit', time: '15분', done: false },
+        { id: '19', title: '주말 일기 예쁘게 완성하기', category: 'korean', time: '30분', done: false }
+      ]
+    };
+
+    // -------------------------------------------------------------
+    // Application State
+    // -------------------------------------------------------------
+    let currentDayKey = 'wed'; // default fallback
+    let appData = {
+      reward: {
+        text: '🎯 이번 주말 자유시간 1시간 + 맛있는 아이스크림!',
+        targetStamps: 5,
+      },
+      homework: JSON.parse(JSON.stringify(DEFAULT_PRESETS))
+    };
+
+    // Today calculation for setting active day initially
+    const jsDay = new Date().getDay(); // 0: Sun, 1: Mon, ... 6: Sat
+    const dayMapJs = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    currentDayKey = dayMapJs[jsDay] || 'wed';
+
+    // -------------------------------------------------------------
+    // Firebase Setup
+    // -------------------------------------------------------------
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'homework-fairy-app';
+
+    // Family Room Code: can be stored in query string or auto-generated
+    const urlParams = new URLSearchParams(window.location.search);
+    let familyCode = urlParams.get('family') || 'home-team';
+
+    async function initFirebase() {
+      if (typeof __firebase_config === 'undefined') {
+        console.warn('Firebase config unavailable, using local memory state.');
+        renderAll();
+        return;
+      }
+      try {
+        const config = JSON.parse(__firebase_config);
+        const app = initializeApp(config);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        currentUser = auth.currentUser;
+        document.getElementById('syncText').textContent = '가족방 실시간 연결됨';
+
+        // Listen for live changes
+        // Strict Path: /artifacts/{appId}/public/data/{collectionName}/{documentId}
+        const familyDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'familyRooms', familyCode);
+        
+        onSnapshot(familyDocRef, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.homework) appData.homework = data.homework;
+            if (data.reward) appData.reward = data.reward;
+            renderAll();
+          } else {
+            // First time room setup: persist defaults
+            saveToCloud();
+          }
+        }, (error) => {
+          console.error("Firestore listen error: ", error);
+        });
+
+      } catch (err) {
+        console.error('Firebase initialization error:', err);
+        document.getElementById('syncText').textContent = '오프라인 모드';
+        renderAll();
+      }
+    }
+
+    // Save to Firestore helper
+    async function saveToCloud() {
+      if (!db || !currentUser) {
+        // Fallback to local rendering
+        renderAll();
+        return;
+      }
+      try {
+        const familyDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'familyRooms', familyCode);
+        await setDoc(familyDocRef, {
+          homework: appData.homework,
+          reward: appData.reward,
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentUser.uid
+        }, { merge: true });
+      } catch (err) {
+        console.error("Error saving data to Firestore:", err);
+        showToast("⚠️ 클라우드 저장 중 지연이 발생했어요.");
+      }
+    }
+
+    // -------------------------------------------------------------
+    // UI Render Functions
+    // -------------------------------------------------------------
+    function renderAll() {
+      renderDateHeader();
+      renderDayTabs();
+      renderHomeworkList();
+      renderRewardSection();
+    }
+
+    function renderDateHeader() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const curDayName = DAYS.find(d => d.key === dayMapJs[now.getDay()])?.short || '오늘';
+      document.getElementById('currentDateDisplay').textContent = `오늘: ${year}. ${month}. ${date} (${curDayName})`;
+    }
+
+    // Render 7 Day selector buttons
+    function renderDayTabs() {
+      const container = document.getElementById('dayTabsContainer');
+      container.innerHTML = '';
+
+      DAYS.forEach((d) => {
+        const isActive = d.key === currentDayKey;
+        const items = appData.homework[d.key] || [];
+        const isComplete = items.length > 0 && items.every(i => i.done);
+
+        const btn = document.createElement('button');
+        btn.className = `flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl transition border-2 ${
+          isActive 
+            ? 'bg-amber-400 border-amber-500 text-amber-950 font-bold shadow-md scale-105' 
+            : 'bg-slate-50 hover:bg-amber-50 border-slate-200 text-slate-600'
+        }`;
+        
+        btn.innerHTML = `
+          <div class="text-base">${isComplete ? '⭐' : d.icon}</div>
+          <span class="font-jua text-base md:text-lg leading-tight mt-0.5">${d.short}</span>
+          <span class="text-[10px] font-bold ${isComplete ? 'text-rose-600' : 'text-slate-400'}">
+            ${isComplete ? '완료!' : (items.length ? `${items.filter(i => i.done).length}/${items.length}` : '-')}
+          </span>
+        `;
+
+        btn.onclick = () => {
+          currentDayKey = d.key;
+          renderDayTabs();
+          renderHomeworkList();
+        };
+
+        container.appendChild(btn);
+      });
+    }
+
+    // Render Homework Checklist of active day
+    function renderHomeworkList() {
+      const dayConfig = DAYS.find(d => d.key === currentDayKey) || DAYS[0];
+      const items = appData.homework[currentDayKey] || [];
+      const listEl = document.getElementById('homeworkList');
+      const emptyEl = document.getElementById('emptyHomeworkState');
+      const completeStamp = document.getElementById('completeStamp');
+
+      // Update Active Header
+      document.getElementById('activeDayBadge').textContent = dayConfig.short;
+      document.getElementById('activeDayTitle').textContent = `${dayConfig.name}의 숙제 & 할 일`;
+      
+      const total = items.length;
+      const doneCount = items.filter(i => i.done).length;
+      const remaining = total - doneCount;
+
+      document.getElementById('totalCount').textContent = `${total}개`;
+      document.getElementById('remainingCount').textContent = `${remaining}개`;
+
+      const isAllComplete = total > 0 && remaining === 0;
+
+      // Status Badge
+      const statusPill = document.getElementById('statusPill');
+      if (total === 0) {
+        statusPill.textContent = '숙제 없음';
+        statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-500';
+      } else if (isAllComplete) {
+        statusPill.textContent = '🎉 숙제 완료!';
+        statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700 animate-pulse';
+      } else {
+        statusPill.textContent = `진행 중 (${Math.round((doneCount/total)*100)}%)`;
+        statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800';
+      }
+
+      // COMPLETE Stamp Display logic
+      if (isAllComplete) {
+        completeStamp.classList.remove('hidden');
+      } else {
+        completeStamp.classList.add('hidden');
+      }
+
+      listEl.innerHTML = '';
+      if (total === 0) {
+        emptyEl.classList.remove('hidden');
+        listEl.classList.add('hidden');
+        return;
+      } else {
+        emptyEl.classList.add('hidden');
+        listEl.classList.remove('hidden');
+      }
+
+      items.forEach((item, index) => {
+        const cat = CATEGORY_MAP[item.category] || CATEGORY_MAP.other;
+        const itemCard = document.createElement('div');
+        itemCard.className = `group flex items-center justify-between p-3.5 md:p-4 rounded-2xl border-2 transition-all ${
+          item.done 
+            ? 'bg-slate-50/80 border-slate-200' 
+            : 'bg-white border-slate-200 hover:border-amber-300 shadow-sm'
+        }`;
+
+        itemCard.innerHTML = `
+          <div class="flex items-center gap-3.5 flex-1 min-w-0">
+            <!-- Custom Checkbox -->
+            <button class="toggle-btn w-8 h-8 rounded-xl flex items-center justify-center transition border-2 ${
+              item.done 
+                ? 'bg-emerald-500 border-emerald-600 text-white shadow-inner scale-95' 
+                : 'bg-white border-slate-300 hover:border-amber-400 text-transparent'
+            }">
+              <span class="text-base font-black">✓</span>
+            </button>
+
+            <!-- Text Content -->
+            <div class="flex-1 min-w-0 select-text">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md border ${cat.bg}">
+                  ${cat.emoji} ${cat.label}
+                </span>
+                <span class="text-[10px] font-bold text-slate-400 flex items-center gap-0.5">
+                  ${item.time || '30분'}
+                </span>
+              </div>
+              <p class="font-sans font-bold text-sm md:text-base ${item.done ? 'line-through text-slate-400' : 'text-slate-800'} break-words">
+                ${escapeHtml(item.title)}
+              </p>
+            </div>
+          </div>
+
+          <!-- Edit & Delete Buttons -->
+          <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 ml-2">
+            <button class="edit-btn p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50" title="수정">
+              ✏️
+            </button>
+            <button class="delete-btn p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="삭제">
+              🗑️
+            </button>
+          </div>
+        `;
+
+        // Toggle Done Event
+        itemCard.querySelector('.toggle-btn').onclick = (e) => {
+          e.stopPropagation();
+          toggleHomeworkDone(item.id);
+        };
+        // Also clicking card content toggles
+        itemCard.querySelector('p').onclick = () => {
+          toggleHomeworkDone(item.id);
+        };
+
+        // Edit
+        itemCard.querySelector('.edit-btn').onclick = (e) => {
+          e.stopPropagation();
+          openEditModal(item);
+        };
+
+        // Delete
+        itemCard.querySelector('.delete-btn').onclick = (e) => {
+          e.stopPropagation();
+          deleteHomeworkItem(item.id);
+        };
+
+        listEl.appendChild(itemCard);
+      });
+    }
+
+    // Render Weekly Stamp Gauge & Reward Board
+    function renderRewardSection() {
+      // Calculate how many days are fully completed
+      let completedDaysCount = 0;
+      DAYS.forEach(d => {
+        const dItems = appData.homework[d.key] || [];
+        if (dItems.length > 0 && dItems.every(i => i.done)) {
+          completedDaysCount++;
+        }
+      });
+
+      const target = appData.reward.targetStamps || 5;
+      document.getElementById('currentRewardText').textContent = appData.reward.text;
+      document.getElementById('stampCount').textContent = completedDaysCount;
+      document.getElementById('stampTarget').textContent = target;
+
+      const percent = Math.min(100, Math.round((completedDaysCount / target) * 100));
+      document.getElementById('stampPercentText').textContent = `${percent}% 달성 (${completedDaysCount}/${target})`;
+      document.getElementById('stampProgressBar').style.width = `${percent}%`;
+
+      // Render 7-day Stamp Badges
+      const board = document.getElementById('weeklyStampBoard');
+      board.innerHTML = '';
+      DAYS.forEach(d => {
+        const dItems = appData.homework[d.key] || [];
+        const isDone = dItems.length > 0 && dItems.every(i => i.done);
+
+        const badge = document.createElement('div');
+        badge.className = `flex flex-col items-center justify-center p-1.5 rounded-2xl border-2 transition ${
+          isDone 
+            ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-sm scale-100' 
+            : 'bg-white/60 border-amber-200/60 text-slate-400'
+        }`;
+
+        badge.innerHTML = `
+          <div class="text-xl md:text-2xl">${isDone ? '🌟' : '⚪'}</div>
+          <span class="text-[11px] font-jua mt-0.5">${d.short}</span>
+          <span class="text-[9px] font-black ${isDone ? 'text-amber-700' : 'text-slate-300'}">${isDone ? '참잘했어요' : '미완료'}</span>
+        `;
+        board.appendChild(badge);
+      });
+
+      // Special Congratulations when target reached
+      if (completedDaysCount >= target && !window._celebratedThisSession) {
+        // Can trigger fanfare celebration
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Item Actions & Logic
+    // -------------------------------------------------------------
+    function toggleHomeworkDone(itemId) {
+      const items = appData.homework[currentDayKey] || [];
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+
+      const wasDone = item.done;
+      item.done = !wasDone;
+
+      if (!wasDone) {
+        sound.playCheck();
+        // Check if this action made the whole day complete!
+        const allDoneNow = items.every(i => i.done);
+        if (allDoneNow) {
+          triggerCompleteCelebration();
+        }
+      } else {
+        sound.playUncheck();
+      }
+
+      saveToCloud();
+      renderAll();
+    }
+
+    function triggerCompleteCelebration() {
+      sound.playFanfare();
+      // Burst colorful confetti
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+
+      showToast("🎉 대단해요! 오늘 숙제를 전부 완료했습니다!");
+    }
+
+    function deleteHomeworkItem(itemId) {
+      appData.homework[currentDayKey] = (appData.homework[currentDayKey] || []).filter(i => i.id !== itemId);
+      showToast("🗑️ 숙제가 삭제되었어요.");
+      saveToCloud();
+      renderAll();
+    }
+
+    // Reset Day checks
+    document.getElementById('resetDayBtn').onclick = () => {
+      const items = appData.homework[currentDayKey] || [];
+      if (!items.length) return;
+      items.forEach(i => i.done = false);
+      showToast("🔄 이 요일의 체크가 초기화되었습니다.");
+      saveToCloud();
+      renderAll();
+    };
+
+    // Load Presets when empty
+    document.getElementById('loadPresetBtn').onclick = () => {
+      appData.homework[currentDayKey] = JSON.parse(JSON.stringify(DEFAULT_PRESETS[currentDayKey] || []));
+      showToast("✨ 추천 숙제가 등록되었어요!");
+      saveToCloud();
+      renderAll();
+    };
+
+    // -------------------------------------------------------------
+    // Modal Logic (Add/Edit Homework)
+    // -------------------------------------------------------------
+    const modal = document.getElementById('homeworkModal');
+    const form = document.getElementById('homeworkForm');
+    const homeworkInput = document.getElementById('homeworkInput');
+    const categorySelect = document.getElementById('categorySelect');
+    const timeSelect = document.getElementById('timeSelect');
+    const editItemId = document.getElementById('editItemId');
+    const modalTitle = document.getElementById('modalTitle');
+
+    document.getElementById('addHomeworkModalBtn').onclick = () => {
+      editItemId.value = '';
+      homeworkInput.value = '';
+      modalTitle.innerHTML = '<span>✏️</span> 새 숙제 등록하기';
+      modal.classList.remove('hidden');
+      setTimeout(() => homeworkInput.focus(), 50);
+    };
+
+    function openEditModal(item) {
+      editItemId.value = item.id;
+      homeworkInput.value = item.title;
+      categorySelect.value = item.category || 'other';
+      timeSelect.value = item.time || '30분';
+      modalTitle.innerHTML = '<span>✏️</span> 숙제 수정하기';
+      modal.classList.remove('hidden');
+      setTimeout(() => homeworkInput.focus(), 50);
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+    document.getElementById('closeModalBtn').onclick = closeModal;
+    document.getElementById('cancelModalBtn').onclick = closeModal;
+
+    // Quick presets click in modal
+    document.querySelectorAll('.quick-preset').forEach(btn => {
+      btn.onclick = () => {
+        homeworkInput.value = btn.dataset.val;
+        categorySelect.value = btn.dataset.cat;
+      };
+    });
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const title = homeworkInput.value.trim();
+      if (!title) return;
+
+      const items = appData.homework[currentDayKey] || [];
+      const idToEdit = editItemId.value;
+
+      if (idToEdit) {
+        // Edit existing
+        const target = items.find(i => i.id === idToEdit);
+        if (target) {
+          target.title = title;
+          target.category = categorySelect.value;
+          target.time = timeSelect.value;
+        }
+        showToast("수정이 완료되었어요 👏");
+      } else {
+        // Add new
+        items.push({
+          id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          title: title,
+          category: categorySelect.value,
+          time: timeSelect.value,
+          done: false
+        });
+        showToast("새 숙제가 추가되었어요 📝");
+      }
+
+      appData.homework[currentDayKey] = items;
+      closeModal();
+      saveToCloud();
+      renderAll();
+    };
+
+    // -------------------------------------------------------------
+    // Reward Modal
+    // -------------------------------------------------------------
+    const rewardModal = document.getElementById('rewardModal');
+    const rewardInput = document.getElementById('rewardInput');
+    const targetStampRange = document.getElementById('targetStampRange');
+    const targetStampRangeVal = document.getElementById('targetStampRangeVal');
+
+    document.getElementById('editRewardBtn').onclick = () => {
+      rewardInput.value = appData.reward.text;
+      targetStampRange.value = appData.reward.targetStamps || 5;
+      targetStampRangeVal.textContent = `${targetStampRange.value}개`;
+      rewardModal.classList.remove('hidden');
+    };
+
+    targetStampRange.oninput = (e) => {
+      targetStampRangeVal.textContent = `${e.target.value}개`;
+    };
+
+    document.getElementById('closeRewardModalBtn').onclick = () => rewardModal.classList.add('hidden');
+    document.getElementById('cancelRewardBtn').onclick = () => rewardModal.classList.add('hidden');
+
+    document.getElementById('rewardForm').onsubmit = (e) => {
+      e.preventDefault();
+      const val = rewardInput.value.trim();
+      if (!val) return;
+
+      appData.reward = {
+        text: val,
+        targetStamps: parseInt(targetStampRange.value, 10)
+      };
+
+      rewardModal.classList.add('hidden');
+      showToast("🎁 보상 목표가 새롭게 저장되었어요!");
+      saveToCloud();
+      renderAll();
+    };
+
+    // -------------------------------------------------------------
+    // Utilities: Toast & Share Link
+    // -------------------------------------------------------------
+    let toastTimeout;
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    document.getElementById('copyShareLinkBtn').onclick = () => {
+      const shareUrl = window.location.origin + window.location.pathname + '?family=' + encodeURIComponent(familyCode);
+      const tempInput = document.createElement('input');
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast("🔗 가족 공유 링크가 복사되었어요! 다른 기기에서 열어보세요.", "📋");
+      } catch (e) {
+        showToast("링크 복사에 실패했습니다.", "❌");
+      }
+      document.body.removeChild(tempInput);
+    };
+
+    document.getElementById('familyCodeBtn').onclick = () => {
+      const newRoom = prompt("가족/학급 방 이름을 입력하세요 (영문/한글):", familyCode);
+      if (newRoom && newRoom.trim() !== "") {
+        const cleanRoom = encodeURIComponent(newRoom.trim());
+        window.location.search = `?family=${cleanRoom}`;
+      }
+    };
+
+    function escapeHtml(string) {
+      return String(string).replace(/[&<>"'`=\/]/g, function (s) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+          '/': '&#x2F;',
+          '`': '&#x60;',
+          '=': '&#x3D;'
+        }[s];
+      });
+    }
+
+    // -------------------------------------------------------------
+    // App Initialization
+    // -------------------------------------------------------------
+    window.onload = () => {
+      initFirebase();
+      renderAll();
+    };
+  </script>
+</body>
+</html>
