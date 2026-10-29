@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>숙제 요정 체크 & 참 잘했어요</title>
+  <title>숙제 요정 체크판</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -40,96 +40,22 @@
       color: #9CA3AF !important;
     }
   </style>
+</head>
+<body class="p-3 sm:p-5 max-w-xl mx-auto pb-24 text-slate-800">
 
-  <!-- Firebase SDK 모듈 -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <!-- 헤더 바 -->
+  <header class="flex items-center justify-between pb-3 pt-1 border-b border-amber-100">
+    <div class="flex items-center gap-2">
+      <span class="text-3xl">⭐</span>
+      <div>
+        <h1 class="text-xl font-cute text-amber-900 tracking-wide">숙제 요정 체크판</h1>
+        <p class="text-xs text-amber-700 font-medium">오늘 할 일을 끝내고 멋진 보상을 모아봐요!</p>
+      </div>
+    </div>
+    <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
+      <span class="w-2 h-2 rounded-full bg-amber-400"></span> 연결 확인중
+    </div>
+  </header>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBMfWqUWm_m5m2BzghqNMq5VCSDdiEW0qA",
-      authDomain: "kids-homework-dea2d.firebaseapp.com",
-      projectId: "kids-homework-dea2d",
-      storageBucket: "kids-homework-dea2d.firebasestorage.app",
-      messagingSenderId: "120453416466",
-      appId: "1:120453416466:web:501bb76c18b7593c0f7acb"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const defaultData = {
-      rewardText: "주말 자유시간 1시간 + 맛있는 간식! 🍦",
-      targetStars: 7,
-      week: {
-        mon: [{ id: "m1", title: "수학익힘책 풀기", category: "수학", time: "20분", done: false }],
-        tue: [{ id: "t1", title: "국어 학습지 2쪽", category: "국어", time: "20분", done: false }],
-        wed: [{ id: "w1", title: "밀크티 학습", category: "기타", time: "30분", done: false }],
-        thu: [{ id: "th1", title: "수학 연산 문제집 2장", category: "수학", time: "20분", done: false }],
-        fri: [{ id: "f1", title: "한 주 동안 배운 내용 일기 쓰기", category: "국어", time: "25분", done: false }],
-        sat: [{ id: "s1", title: "주말 즐거운 자유 독서 30분", category: "독서", time: "30분", done: false }],
-        sun: [{ id: "su1", title: "다음 주 시간표 확인 & 준비물 챙기기", category: "생활", time: "15분", done: false }]
-      }
-    };
-
-    window.appState = null;
-    const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    window.currentDay = dayMap[new Date().getDay()];
-
-    const docRef = doc(db, "homework_tracker", "family_main");
-    const syncStatusEl = document.getElementById('sync-status-badge');
-
-    window.playAudioSound = function(type) {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        if (type === 'check') {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
-          gain.gain.setValueAtTime(0.2, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.15);
-        } else if (type === 'fanfare') {
-          const notes = [523.25, 659.25, 783.99, 1046.50];
-          notes.forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.1 + 0.25);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(ctx.currentTime + idx * 0.1);
-            osc.stop(ctx.currentTime + idx * 0.1 + 0.25);
-          });
-        }
-      } catch(e) {}
-    };
-
-    // 실시간 동기화 리스너: 서버에 이미 데이터가 있으면 절대로 기본값으로 덮어쓰지 않음
-    onSnapshot(docRef, { includeMetadataChanges: false }, (docSnap) => {
-      if (docSnap.exists()) {
-        window.appState = docSnap.data();
-      } else {
-        // 서버에 아예 없을 때만 단 한 번 생성
-        window.appState = defaultData;
-        setDoc(docRef, defaultData);
-      }
-      syncStatusEl.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 실시간 연동중`;
-      syncStatusEl.className = "flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 shadow-sm";
-      window.renderApp();
-    }, (error) => {
-      console.error("Firestore 연결 오류:", error);
-      syncStatusEl.innerHTML = `연결 대기중`;
-      syncStatusEl.className = "flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full border border-rose-200";
-    });
-
-    // 서버로 데이터 즉시 저장
-    window.saveData = async function() {
-      if (!window.appState
+  <!-- 상단 요일 선택 탭 -->
+  <nav class="
