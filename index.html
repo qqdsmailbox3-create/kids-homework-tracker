@@ -18,7 +18,6 @@
     }
     .font-cute { font-family: 'Jua', sans-serif; }
     
-    /* 큼직하고 리얼한 COMPLETE 참 잘했어요 도장 애니메이션 */
     .stamp-badge {
       display: inline-block;
       border: 4px dashed #EF4444;
@@ -47,7 +46,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 전달받은 Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyBMfWqUWm_m5m2BzghqNMq5VCSDdiEW0qA",
       authDomain: "kids-homework-dea2d.firebaseapp.com",
@@ -60,59 +58,27 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 기본 숙제 데이터 템플릿
     const defaultData = {
       rewardText: "주말 자유시간 1시간 + 맛있는 간식! 🍦",
       targetStars: 7,
       week: {
-        mon: [
-          { id: "m1", title: "수학익힘책 풀기", category: "수학", time: "20분", done: false },
-          { id: "m2", title: "책 1권 읽고 독서록 쓰기", category: "독서", time: "30분", done: false },
-          { id: "m3", title: "영어 단어 10개 복습", category: "영어", time: "15분", done: false }
-        ],
-        tue: [
-          { id: "t1", title: "국어 학습지 2쪽", category: "국어", time: "20분", done: false },
-          { id: "t2", title: "줄넘기 100개 운동", category: "운동", time: "15분", done: false },
-          { id: "t3", title: "내 방 책상 스스로 정리", category: "생활", time: "10분", done: false }
-        ],
-        wed: [
-          { id: "w1", title: "밀크티 학습", category: "기타", time: "30분", done: false },
-          { id: "w2", title: "독서록 쓰기", category: "독서", time: "30분", done: false },
-          { id: "w3", title: "동화책 읽고 마음에 드는 문장 쓰기", category: "독서", time: "30분", done: false }
-        ],
-        thu: [
-          { id: "th1", title: "수학 연산 문제집 2장", category: "수학", time: "20분", done: false },
-          { id: "th2", title: "신나는 음악 연습 / 리코더", category: "음악", time: "15분", done: false },
-          { id: "th3", title: "책 읽기 30분", category: "독서", time: "30분", done: false }
-        ],
-        fri: [
-          { id: "f1", title: "한 주 동안 배운 내용 일기 쓰기", category: "국어", time: "25분", done: false },
-          { id: "f2", title: "학교 가방 & 필통 미리 챙기기", category: "생활", time: "10분", done: false },
-          { id: "f3", title: "신나게 스트레칭 & 운동", category: "운동", time: "20분", done: false }
-        ],
-        sat: [
-          { id: "s1", title: "주말 즐거운 자유 독서 30분", category: "독서", time: "30분", done: false },
-          { id: "s2", title: "방 청소 및 분리수거 돕기", category: "생활", time: "15분", done: false }
-        ],
-        sun: [
-          { id: "su1", title: "다음 주 시간표 확인 & 준비물 챙기기", category: "생활", time: "15분", done: false },
-          { id: "su2", title: "가족과 함께 대화하고 산책하기", category: "운동", time: "30분", done: false }
-        ]
+        mon: [{ id: "m1", title: "수학익힘책 풀기", category: "수학", time: "20분", done: false }],
+        tue: [{ id: "t1", title: "국어 학습지 2쪽", category: "국어", time: "20분", done: false }],
+        wed: [{ id: "w1", title: "밀크티 학습", category: "기타", time: "30분", done: false }],
+        thu: [{ id: "th1", title: "수학 연산 문제집 2장", category: "수학", time: "20분", done: false }],
+        fri: [{ id: "f1", title: "한 주 동안 배운 내용 일기 쓰기", category: "국어", time: "25분", done: false }],
+        sat: [{ id: "s1", title: "주말 즐거운 자유 독서 30분", category: "독서", time: "30분", done: false }],
+        sun: [{ id: "su1", title: "다음 주 시간표 확인 & 준비물 챙기기", category: "생활", time: "15분", done: false }]
       }
     };
 
-    // 전역 상태
-    window.appState = JSON.parse(JSON.stringify(defaultData));
-    window.currentDay = 'wed'; // 기본 수요일
-
-    // 요일 매핑
+    window.appState = null;
     const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const todayIndex = new Date().getDay();
-    window.currentDay = dayMap[todayIndex];
+    window.currentDay = dayMap[new Date().getDay()];
 
     const docRef = doc(db, "homework_tracker", "family_main");
+    const syncStatusEl = document.getElementById('sync-status-badge');
 
-    // 효과음 재생 함수 (Web Audio API)
     window.playAudioSound = function(type) {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -146,457 +112,24 @@
       } catch(e) {}
     };
 
-    // Firestore 실시간 리스너 연동
-    const syncStatusEl = document.getElementById('sync-status-badge');
-    onSnapshot(docRef, (docSnap) => {
+    // 실시간 동기화 리스너: 서버에 이미 데이터가 있으면 절대로 기본값으로 덮어쓰지 않음
+    onSnapshot(docRef, { includeMetadataChanges: false }, (docSnap) => {
       if (docSnap.exists()) {
         window.appState = docSnap.data();
       } else {
-        setDoc(docRef, defaultData);
+        // 서버에 아예 없을 때만 단 한 번 생성
         window.appState = defaultData;
+        setDoc(docRef, defaultData);
       }
       syncStatusEl.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 실시간 연동중`;
       syncStatusEl.className = "flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 shadow-sm";
       window.renderApp();
     }, (error) => {
-      console.warn("Firestore 연결 대기/오프라인 모드:", error);
-      syncStatusEl.innerHTML = `로컬 저장 모드`;
-      syncStatusEl.className = "flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-200";
-      window.renderApp();
+      console.error("Firestore 연결 오류:", error);
+      syncStatusEl.innerHTML = `연결 대기중`;
+      syncStatusEl.className = "flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-full border border-rose-200";
     });
 
-    // 데이터 저장 함수
+    // 서버로 데이터 즉시 저장
     window.saveData = async function() {
-      try {
-        await setDoc(docRef, window.appState);
-      } catch (err) {
-        localStorage.setItem('local_homework_data', JSON.stringify(window.appState));
-      }
-      window.renderApp();
-    };
-  </script>
-</head>
-<body class="p-3 sm:p-5 max-w-xl mx-auto pb-24 text-slate-800">
-
-  <!-- 헤더 바 -->
-  <header class="flex items-center justify-between pb-3 pt-1 border-b border-amber-100">
-    <div class="flex items-center gap-2">
-      <span class="text-3xl">⭐</span>
-      <div>
-        <h1 class="text-xl font-cute text-amber-900 tracking-wide">숙제 요정 체크판</h1>
-        <p class="text-xs text-amber-700 font-medium">오늘 할 일을 끝내고 멋진 보상을 모아봐요!</p>
-      </div>
-    </div>
-    <div id="sync-status-badge" class="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
-      동기화 준비중...
-    </div>
-  </header>
-
-  <!-- 상단 요일 선택 탭 -->
-  <nav class="grid grid-cols-7 gap-1 sm:gap-2 my-4" id="day-tabs"></nav>
-
-  <!-- 메인 요일 카드 -->
-  <main class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border-4 border-amber-200 relative overflow-hidden">
-    
-    <!-- COMPLETE 참 잘했어요 도장 (모두 완료 시 표시) -->
-    <div id="complete-stamp-box" class="hidden absolute top-4 right-4 z-20 pointer-events-none">
-      <div class="stamp-badge px-4 py-2 rounded-2xl border-4 text-center">
-        <div class="text-xs font-bold text-red-500">참 잘했어요!</div>
-        <div class="text-2xl font-black tracking-wider">💮 COMPLETE!</div>
-      </div>
-    </div>
-
-    <!-- 요일 타이틀 & 숙제 추가 헤더 -->
-    <div class="flex items-start justify-between pb-4 border-b border-slate-100 relative z-10">
-      <div class="flex items-center gap-3">
-        <div id="day-avatar" class="w-12 h-12 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl font-cute shadow-md">
-          월
-        </div>
-        <div>
-          <h2 id="day-title" class="text-xl font-bold text-slate-800">월요일의 숙제</h2>
-          <p id="remaining-count" class="text-xs text-slate-500 mt-0.5 font-semibold">남은 숙제: 0개</p>
-        </div>
-      </div>
-      <div id="progress-chip" class="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-full text-xs font-bold shadow-inner">
-        진행 중 (0%)
-      </div>
-    </div>
-
-    <!-- 버튼 바 -->
-    <div class="flex items-center justify-between gap-2 my-4">
-      <button onclick="resetDayChecks()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1.5 transition">
-        <i class="fa-solid fa-rotate-left"></i> 체크 초기화
-      </button>
-      <button onclick="openAddModal()" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 active:scale-95 text-amber-950 font-bold rounded-xl text-sm flex items-center gap-1.5 shadow-md transition">
-        <i class="fa-solid fa-plus"></i> 숙제 추가하기
-      </button>
-    </div>
-
-    <!-- 숙제 체크리스트 -->
-    <div id="homework-list" class="space-y-3"></div>
-
-    <!-- 하단 오늘의 꿀팁 -->
-    <div class="mt-6 p-3.5 bg-amber-50/80 rounded-2xl border border-amber-100 flex items-center gap-3">
-      <span class="text-2xl">💡</span>
-      <p class="text-xs text-amber-900 leading-relaxed font-medium">
-        숙제를 다 하고 체크하면 <b>COMPLETE 참 잘했어요 도장</b>과 함께 별 스탬프가 모여요!
-      </p>
-    </div>
-  </main>
-
-  <!-- 칭찬 스탬프판 & 보상 카드 -->
-  <section class="mt-5 bg-gradient-to-r from-amber-100 via-orange-100 to-yellow-100 rounded-3xl p-5 border-2 border-amber-200 shadow-md">
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">🎁</span>
-        <h3 class="font-cute text-lg text-amber-900">우리 아이 보상 스탬프판</h3>
-      </div>
-      <button onclick="editReward()" class="text-xs font-bold text-amber-800 bg-white/70 hover:bg-white px-2.5 py-1 rounded-lg border border-amber-300">
-        보상 변경 ✏️
-      </button>
-    </div>
-
-    <div class="bg-white/80 rounded-2xl p-4 shadow-sm mb-3">
-      <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-2">
-        <span>현재 달성률: <b id="stamp-counter" class="text-amber-600 text-sm">0/7</b></span>
-        <span id="stamp-percent" class="text-amber-600">0%</span>
-      </div>
-      <div class="w-full bg-slate-200 rounded-full h-3.5 overflow-hidden">
-        <div id="stamp-progress-bar" class="bg-amber-400 h-3.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-      </div>
-      <div id="stars-row" class="flex justify-between items-center mt-3 px-1 text-2xl"></div>
-    </div>
-
-    <div class="bg-white/90 rounded-2xl p-3.5 flex items-center gap-3 border border-amber-200">
-      <span class="text-2xl">🎯</span>
-      <div class="overflow-hidden">
-        <div class="text-[11px] font-bold text-amber-700">목표 보상</div>
-        <div id="reward-text-display" class="text-sm font-bold text-slate-800 truncate">주말 자유시간 1시간 + 간식</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 숙제 추가 / 수정 모달 -->
-  <div id="hw-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
-      <h3 id="modal-title" class="text-lg font-cute text-slate-800">숙제 추가하기</h3>
-      <input type="hidden" id="edit-id">
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">숙제 이름</label>
-        <input type="text" id="input-title" placeholder="예: 구몬 수학 풀기" class="w-full px-3 py-2 border rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-      </div>
-
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">카테고리</label>
-          <select id="input-category" class="w-full px-3 py-2 border rounded-xl text-sm font-medium bg-white">
-            <option value="수학">수학 📐</option>
-            <option value="국어">국어 📖</option>
-            <option value="영어">영어 🔤</option>
-            <option value="독서">독서 📚</option>
-            <option value="운동">운동 ⚽</option>
-            <option value="음악">음악 🎵</option>
-            <option value="생활">생활 🧹</option>
-            <option value="기타">기타 ⭐</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">소요 시간</label>
-          <input type="text" id="input-time" placeholder="예: 20분" class="w-full px-3 py-2 border rounded-xl text-sm font-medium">
-        </div>
-      </div>
-
-      <div class="flex gap-2 pt-2">
-        <button onclick="closeModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-slate-600 rounded-xl text-sm">취소</button>
-        <button onclick="saveHomeworkItem()" class="flex-1 py-2.5 bg-amber-400 hover:bg-amber-500 font-bold text-amber-950 rounded-xl text-sm shadow">저장하기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 토스트 알림 바 -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50">
-    알림 메시지
-  </div>
-
-  <script>
-    const dayNames = {
-      mon: { label: '월', full: '월요일', color: 'bg-amber-400' },
-      tue: { label: '화', full: '화요일', color: 'bg-orange-400' },
-      wed: { label: '수', full: '수요일', color: 'bg-yellow-400' },
-      thu: { label: '목', full: '목요일', color: 'bg-emerald-400' },
-      fri: { label: '금', full: '금요일', color: 'bg-blue-400' },
-      sat: { label: '토', full: '토요일', color: 'bg-indigo-400' },
-      sun: { label: '일', full: '일요일', color: 'bg-rose-400' }
-    };
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.classList.remove('opacity-0');
-      setTimeout(() => toast.classList.add('opacity-0'), 2200);
-    }
-
-    // 메인 화면 렌더링
-    window.renderApp = function() {
-      renderTabs();
-      renderDayCard();
-      renderRewardSection();
-    };
-
-    function renderTabs() {
-      const tabsEl = document.getElementById('day-tabs');
-      tabsEl.innerHTML = '';
-      const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-      days.forEach(day => {
-        const list = window.appState.week[day] || [];
-        const isAllDone = list.length > 0 && list.every(i => i.done);
-        const isCurrent = window.currentDay === day;
-
-        const btn = document.createElement('button');
-        btn.onclick = () => { window.currentDay = day; window.renderApp(); };
-        btn.className = `flex flex-col items-center justify-center py-2 rounded-2xl transition border-2 ${
-          isCurrent 
-            ? 'bg-amber-400 text-amber-950 border-amber-500 font-bold shadow-md scale-105' 
-            : 'bg-white text-slate-600 border-amber-100 hover:bg-amber-50'
-        }`;
-
-        btn.innerHTML = `
-          <span class="text-xs">${dayNames[day].label}</span>
-          <span class="text-sm mt-0.5">${isAllDone ? '⭐' : (list.length ? '📝' : '•')}</span>
-        `;
-        tabsEl.appendChild(btn);
-      });
-    }
-
-    function renderDayCard() {
-      const day = window.currentDay;
-      const list = window.appState.week[day] || [];
-      const info = dayNames[day];
-
-      document.getElementById('day-avatar').innerText = info.label;
-      document.getElementById('day-avatar').className = `w-12 h-12 rounded-2xl ${info.color} text-white flex items-center justify-center text-2xl font-cute shadow-md`;
-      document.getElementById('day-title').innerText = `${info.full}의 숙제 & 할 일`;
-
-      const doneCount = list.filter(i => i.done).length;
-      const totalCount = list.length;
-      const isAllDone = totalCount > 0 && doneCount === totalCount;
-
-      document.getElementById('remaining-count').innerHTML = `남은 숙제: <span class="text-rose-500 font-bold">${totalCount - doneCount}개</span> / 총 ${totalCount}개`;
-      
-      const pct = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
-      document.getElementById('progress-chip').innerText = isAllDone ? '완료! (100%)' : `진행 중 (${pct}%)`;
-      document.getElementById('progress-chip').className = isAllDone 
-        ? "px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full text-xs font-bold border border-rose-200 shadow-sm"
-        : "px-3 py-1.5 bg-amber-100 text-amber-800 rounded-full text-xs font-bold shadow-inner";
-
-      // COMPLETE 스탬프 제어
-      const stampBox = document.getElementById('complete-stamp-box');
-      if (isAllDone) {
-        stampBox.classList.remove('hidden');
-      } else {
-        stampBox.classList.add('hidden');
-      }
-
-      // 숙제 리스트 그리기
-      const listEl = document.getElementById('homework-list');
-      listEl.innerHTML = '';
-
-      if (list.length === 0) {
-        listEl.innerHTML = `
-          <div class="text-center py-10 text-slate-400">
-            <span class="text-3xl">🎉</span>
-            <p class="text-xs mt-2 font-medium">등록된 숙제가 없어요.<br>새로운 숙제를 추가해 보세요!</p>
-          </div>
-        `;
-        return;
-      }
-
-      list.forEach((item, index) => {
-        const card = document.createElement('div');
-        card.className = `p-3.5 sm:p-4 rounded-2xl border-2 transition flex items-center justify-between gap-3 ${
-          item.done ? 'bg-amber-50/50 border-amber-200' : 'bg-slate-50 border-slate-200/80 hover:bg-slate-100/70'
-        }`;
-
-        card.innerHTML = `
-          <div class="flex items-center gap-3.5 flex-1 min-w-0" onclick="toggleHomework('${item.id}')" style="cursor: pointer;">
-            <div class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
-              item.done ? 'bg-amber-400 border-amber-500 text-amber-950' : 'bg-white border-slate-300'
-            }">
-              ${item.done ? '<i class="fa-solid fa-check text-xs"></i>' : ''}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-0.5">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-slate-600 border border-slate-200">
-                  ${item.category || '숙제'}
-                </span>
-                <span class="text-[11px] text-slate-400 font-medium">${item.time || ''}</span>
-              </div>
-              <p class="text-sm font-bold text-slate-800 break-words ${item.done ? 'done-text' : ''}">${item.title}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-1">
-            <button onclick="editHomework('${item.id}')" class="p-2 text-slate-400 hover:text-amber-600 transition" title="수정">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button onclick="deleteHomework('${item.id}')" class="p-2 text-slate-400 hover:text-rose-500 transition" title="삭제">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </div>
-        `;
-        listEl.appendChild(card);
-      });
-    }
-
-    // 숙제 체크 토글
-    window.toggleHomework = function(id) {
-      const day = window.currentDay;
-      const list = window.appState.week[day];
-      const target = list.find(x => x.id === id);
-      if (!target) return;
-
-      target.done = !target.done;
-
-      if (target.done) {
-        window.playAudioSound('check');
-      }
-
-      // 전체 완료 여부 체크
-      const isAllDone = list.every(i => i.done);
-      if (isAllDone && target.done) {
-        window.playAudioSound('fanfare');
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-        showToast("💮 축하해요! 모든 숙제를 완료했어요!");
-      }
-
-      window.saveData();
-    };
-
-    // 체크 초기화
-    window.resetDayChecks = function() {
-      if (!confirm('오늘의 체크 상태를 모두 초기화할까요?')) return;
-      const list = window.appState.week[window.currentDay];
-      list.forEach(i => i.done = false);
-      window.saveData();
-      showToast('체크가 초기화되었어요.');
-    };
-
-    // 숙제 추가 모달 열기
-    window.openAddModal = function() {
-      document.getElementById('modal-title').innerText = "새 숙제 추가하기";
-      document.getElementById('edit-id').value = "";
-      document.getElementById('input-title').value = "";
-      document.getElementById('input-time').value = "20분";
-      document.getElementById('input-category').value = "수학";
-      document.getElementById('hw-modal').classList.remove('hidden');
-    };
-
-    // 숙제 수정 모달 열기
-    window.editHomework = function(id) {
-      const list = window.appState.week[window.currentDay];
-      const target = list.find(x => x.id === id);
-      if (!target) return;
-
-      document.getElementById('modal-title').innerText = "숙제 내용 수정하기";
-      document.getElementById('edit-id').value = target.id;
-      document.getElementById('input-title').value = target.title;
-      document.getElementById('input-time').value = target.time || "20분";
-      document.getElementById('input-category').value = target.category || "기타";
-      document.getElementById('hw-modal').classList.remove('hidden');
-    };
-
-    window.closeModal = function() {
-      document.getElementById('hw-modal').classList.add('hidden');
-    };
-
-    // 숙제 추가 / 수정 저장 (실시간 반영)
-    window.saveHomeworkItem = function() {
-      const title = document.getElementById('input-title').value.trim();
-      const time = document.getElementById('input-time').value.trim() || '20분';
-      const category = document.getElementById('input-category').value;
-      const editId = document.getElementById('edit-id').value;
-
-      if (!title) {
-        alert('숙제 이름을 입력해 주세요!');
-        return;
-      }
-
-      const list = window.appState.week[window.currentDay];
-
-      if (editId) {
-        // 수정 모드
-        const target = list.find(x => x.id === editId);
-        if (target) {
-          target.title = title;
-          target.time = time;
-          target.category = category;
-        }
-        showToast("수정이 완료되었어요 👏");
-      } else {
-        // 추가 모드
-        list.push({
-          id: 'hw_' + Date.now(),
-          title: title,
-          time: time,
-          category: category,
-          done: false
-        });
-        showToast("새 숙제가 추가되었어요 ✨");
-      }
-
-      closeModal();
-      window.saveData();
-    };
-
-    // 숙제 삭제
-    window.deleteHomework = function(id) {
-      if (!confirm('이 숙제를 삭제할까요?')) return;
-      window.appState.week[window.currentDay] = window.appState.week[window.currentDay].filter(x => x.id !== id);
-      window.saveData();
-      showToast('숙제가 삭제되었어요.');
-    };
-
-    // 보상 섹션 렌더링
-    function renderRewardSection() {
-      const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-      let completedDays = 0;
-
-      days.forEach(d => {
-        const list = window.appState.week[d] || [];
-        if (list.length > 0 && list.every(i => i.done)) {
-          completedDays++;
-        }
-      });
-
-      const target = window.appState.targetStars || 7;
-      document.getElementById('stamp-counter').innerText = `${completedDays}/${target}개`;
-      const pct = Math.min(100, Math.round((completedDays / target) * 100));
-      document.getElementById('stamp-percent').innerText = `${pct}%`;
-      document.getElementById('stamp-progress-bar').style.width = `${pct}%`;
-      document.getElementById('reward-text-display').innerText = window.appState.rewardText || '주말 자유시간 1시간';
-
-      const starsRow = document.getElementById('stars-row');
-      starsRow.innerHTML = '';
-      for (let i = 0; i < 7; i++) {
-        const isDone = i < completedDays;
-        const star = document.createElement('span');
-        star.innerText = isDone ? '⭐' : '⚪';
-        star.className = isDone ? 'scale-110 transition-transform' : 'opacity-40';
-        starsRow.appendChild(star);
-      }
-    }
-
-    // 보상 내용 수정
-    window.editReward = function() {
-      const current = window.appState.rewardText || "주말 자유시간 1시간";
-      const next = prompt("다 모았을 때 받을 보상을 적어주세요:", current);
-      if (next !== null && next.trim() !== "") {
-        window.appState.rewardText = next.trim();
-        window.saveData();
-        showToast("보상 목표가 변경되었어요 🎁");
-      }
-    };
-  </script>
-</body>
-</html>
+      if (!window.appState
